@@ -1,0 +1,41 @@
+name: Crypto News Agent
+
+on:
+  schedule:
+    # Daily report every day at 7:00 AM IST (01:30 UTC)
+    - cron: '30 1 * * *'
+    # Monitor every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch:  # allows manual run
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Daily Report
+        if: github.event.schedule == '30 1 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODE: daily
+        run: python crypto_agent.py
+
+      - name: Run Monitor
+        if: github.event.schedule == '0 */2 * * *'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODE: monitor
+        run: python crypto_agent.py
